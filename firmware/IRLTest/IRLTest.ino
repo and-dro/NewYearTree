@@ -125,9 +125,9 @@ void loop() {
       }
       if(mapped)
       {
-          Serial.print("row");
+          Serial.print("row: ");
           Serial.print(row);
-          Serial.print(", column:");
+          Serial.print(", column: ");
           Serial.println(column);
       }
     }
