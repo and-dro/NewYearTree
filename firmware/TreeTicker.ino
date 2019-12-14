@@ -16,7 +16,7 @@ void treeInit()
   for(byte i=0;i<3;i++)
   {
     byte center = tops[i] + (tops[i+1] - tops[i])/ 2;
-    //Serial.println(String(center));
+    //uart.println(String(center));
     byte btmLow = center-1;
     byte btmHigh = center+2;
     

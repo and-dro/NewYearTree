@@ -1,5 +1,5 @@
 struct pixelData {
-  byte index, h, v, mode;
+  byte index, h, v;
 }; // тип - параметры одного элемента
 
 static byte stripMode = 0; // режим свечения
@@ -36,9 +36,8 @@ void stripAddNewLamp() // если не все лампы горят, добав
       int newIndex = getNewPosition();
 
       stripPoints[ledIndex].index = newIndex;
-      stripPoints[ledIndex].h = random(0, 255);
+      stripPoints[ledIndex].h = random(0, 127) * 2;
       stripPoints[ledIndex].v = 1;
-      stripPoints[ledIndex].mode = 1;
 
       stripActive ++;
       stripTimeout = 5;
@@ -51,7 +50,7 @@ byte getFreePoint() //найдем свободное место в коллек
   byte freePoint = 0;
   for (byte i = 0; i < STRIP_MAX; i++)
   {
-    if (stripPoints[i].mode == 0)
+    if (stripPoints[i].index == 0)
     {
       freePoint = i;
       break;
@@ -93,35 +92,31 @@ void stripChageValue() // изменим яркость активных эле�
   // раззожем и потушим
   for (byte ledIndex = 0; ledIndex < STRIP_MAX; ledIndex++)
   {
-    pixel = stripPoints[ledIndex];
-    if (pixel.mode == 1)
-    { // разжигаем
-      if (pixel.v < 60)
+    if(stripPoints[ledIndex].index != 0)
+    {
+      pixel = stripPoints[ledIndex];
+      if (pixel.v < 100)// разжигаем
       {
         stripPoints[ledIndex].v = pixel.v + (1 + (pixel.v > 20 ? 1 : 0) + (pixel.v > 40 ? 1 : 0));
         strip.setHSV(pixel.index, pixel.h, 255, pixel.v);
+        if (pixel.v >= 61) stripPoints[ledIndex].v = 162;
       }
       else // розжиг завершен, пора тушить
       {
-        stripPoints[ledIndex].v = 62;
-        stripPoints[ledIndex].mode = 2;
-      }
-    }
-    else if (pixel.mode == 2)
-    {
-      // гасим
-      if (pixel.v > 1)
-      {
-        stripPoints[ledIndex].v = pixel.v - ((1 + (pixel.v > 20 ? 1 : 0) + (pixel.v > 40 ? 1 : 0)));
-        strip.setHSV(pixel.index, pixel.h, 255, pixel.v);
-      }
-      else
-      { 
-        // выключаем
-        strip.setColor(pixel.index, BLACK);
-        // освобождаем элемент
-        stripPoints[ledIndex].mode = 0;
-        stripActive --;
+        // гасим
+        if (pixel.v > 100)
+        {
+          stripPoints[ledIndex].v = pixel.v - ((1 + (pixel.v > 120 ? 1 : 0) + (pixel.v > 140 ? 1 : 0)));
+          strip.setHSV(pixel.index, pixel.h, 255, pixel.v - 100);
+        }
+        else
+        { 
+          // выключаем
+          strip.setColor(pixel.index, BLACK);
+          // освобождаем элемент
+          stripPoints[ledIndex].index = 0;
+          stripActive --;
+        }
       }
     }
   }
