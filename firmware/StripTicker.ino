@@ -91,7 +91,7 @@ void stripChageValue() // изменим яркость активных эле�
           strip.setColor(index, BLACK);
           stripActive --;
           ledPoints[index].mode = 0xFF;
-          ledPoints[index].value = NUMLEDS_STRIP - NUMLEDS_STAR - 1;
+          ledPoints[index].value = NUMLEDS_STAR / 3;
         }
       }
       if ((ledPoints[index].mode & 0xC0) == 0x80)

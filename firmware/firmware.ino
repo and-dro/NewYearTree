@@ -29,14 +29,16 @@ microLED strip(leds, NUMLEDS, LED_PIN);  // объект лента
 
 #include "stripHSV.h"
 
-byte  MainLoop;
 unsigned long main_timer;
 
-
+static struct treeState {
+  byte  MainLoop;
+  bool pause;
+} treeState; // управляемое состояние елки
 
 void setup() {
-  MainLoop = 5;
-  
+  StateInit();
+    
   uart.begin(9600);
   uart.println("start-nyt");
 
@@ -57,15 +59,18 @@ void receiveEvent(int howMany)
 {
   while (Wire.available()) // пройтись по всем до последнего
   { 
-    byte c = Wire.read();    // принять байт как символ
-    // uart.println(c, HEX);         // напечатать символ
+    byte cmd = Wire.read();    // принять байт как символ
+    // uart.println(cmd, HEX);         // напечатать символ
+    StateUpdate(cmd);
   }
 }
 
 
 void loop() {
 
-  if (millis() - main_timer > MainLoop) {
+  uartTick();
+  
+  if ((millis() - main_timer > treeState.MainLoop) && !treeState.pause) {
     starTick(); // звезда
 
     stripTick(); // лента вокруг ствола под звездой
