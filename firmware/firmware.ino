@@ -1,11 +1,16 @@
 
 // пример работы с лентой
 #define LED_PIN 13       // пин ленты
-#define NUMLEDS_TREE 100      // кол-во светодиодов на елке
+#define NUMLEDS_TREE 100     // кол-во светодиодов на елке
 #define NUMLEDS_STAR 30      // кол-во светодиодов на звезде
-#define NUMLEDS_STRIP 156      // кол-во светодиодов на переходной ленте
+#define NUMLEDS_STRIP 156    // кол-во светодиодов на переходной ленте
 #define NUMLEDS 286 // кол-во светодиодов
 #define STRIP_MAX 50 // максимум светодиодов на ленте одновремено
+
+struct pixelData {
+  uint8_t mode, value;
+}; // тип - параметры одного элемента
+static pixelData ledPoints[NUMLEDS_TREE + NUMLEDS_STRIP]; // массив параметров светящихся элементов
 
 #define ORDER_RGB      // порядок цветов ORDER_GRB / ORDER_RGB / ORDER_BRG
 
@@ -22,8 +27,12 @@ microLED strip(leds, NUMLEDS, LED_PIN);  // объект лента
 // получение команд из IR пульта по I2C с другого ардуино
 #include <Wire.h>
 
+#include "stripHSV.h"
+
 byte  MainLoop;
 unsigned long main_timer;
+
+
 
 void setup() {
   MainLoop = 5;
@@ -49,7 +58,7 @@ void receiveEvent(int howMany)
   while (Wire.available()) // пройтись по всем до последнего
   { 
     byte c = Wire.read();    // принять байт как символ
-    uart.println(c, HEX);         // напечатать символ
+    // uart.println(c, HEX);         // напечатать символ
   }
 }
 

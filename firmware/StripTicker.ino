@@ -1,16 +1,10 @@
-struct pixelData {
-  byte index, h, v;
-}; // тип - параметры одного элемента
-
 static byte stripMode = 0; // режим свечения
 static int stripLow = NUMLEDS_TREE; // нижняяя граница в общем массиве
 static int stripHigh = NUMLEDS_TREE + NUMLEDS_STRIP - 1; // верхняя граница в общем массиве
 static byte stripActive = 0; // сколько элементов уже светится
 static byte stripTimeout = 0; // сколько осталось до начала зажигания следующего элемента
-static pixelData stripPoints[STRIP_MAX]; // массив светящихся элементов
 static byte stripLast[NUMLEDS_STRIP]; // счетчик последних зажигавшихся элементов (чтобы заставить светиться все)
-static struct pixelData pixel; // параметры текущего элемента
-
+static LEDdata zLedData = LEDdata(0);
 
 void stripTick() // обработчик одного цикла для ленты
 {
@@ -32,12 +26,9 @@ void stripAddNewLamp() // если не все лампы горят, добав
     }
     else
     {
-      byte ledIndex = getFreePoint();
       int newIndex = getNewPosition();
-
-      stripPoints[ledIndex].index = newIndex;
-      stripPoints[ledIndex].h = random(0, 127) * 2;
-      stripPoints[ledIndex].v = 1;
+      ledPoints[newIndex].value = random(0, 255);
+      ledPoints[newIndex].mode = 0x81;
 
       stripActive ++;
       stripTimeout = 5;
@@ -45,41 +36,31 @@ void stripAddNewLamp() // если не все лампы горят, добав
   }
 }
 
-byte getFreePoint() //найдем свободное место в коллекции указателей состояний
-{
-  byte freePoint = 0;
-  for (byte i = 0; i < STRIP_MAX; i++)
-  {
-    if (stripPoints[i].index == 0)
-    {
-      freePoint = i;
-      break;
-    }
-  }
-  return freePoint;
-}
-
 int getNewPosition() // определим совободную позицию на ленте
 {
   int newPosition = 0;
   while (true)
   {
-    byte shift = random(stripHigh - stripLow); // берем рандомайзер
+    byte shift = random(NUMLEDS_STRIP); // берем рандомайзер
     newPosition = stripLow + shift;
     bool checked = true;
-    for (byte i = 0; i < STRIP_MAX; i++)
+    for (byte i = 0; i < NUMLEDS_STRIP; i++)
     {
-      if (stripPoints[i].index != 0)
+      if (ledPoints[stripLow + i].mode > 0)
       {
-        checked = checked && abs(stripPoints[i].index - newPosition) > 1 && stripLast[shift] == 0; // рядом нельзя, слишком часто нельзя
+        checked = checked && abs(i - shift) > 1; // рядом нельзя, слишком часто нельзя
       }
     }
     if (checked)
     {
-      stripLast[shift] = NUMLEDS_STRIP - STRIP_MAX; // этот массив не дает использовать элемент слишком часто
+      // сделаем другие элементы достпными для выбора (т.к. при гашении они блокируются для выбора)
       for (byte j = 0; j < NUMLEDS_STRIP; j++)
       {
-        if (stripLast[j]) stripLast[j]--;
+        // Ограничение частоты выбора случайного элемента, устанавливается после гашения в макс(128, 255 - число активных элементов)
+        if (ledPoints[stripLow + j].mode == 0xFF) {
+          ledPoints[stripLow + j].value--;
+          if (ledPoints[stripLow + j].value == 0) ledPoints[stripLow + j].mode = 0;
+        }
       }
       break;
     }
@@ -90,32 +71,37 @@ int getNewPosition() // определим совободную позицию �
 void stripChageValue() // изменим яркость активных элементов
 {
   // раззожем и потушим
-  for (byte ledIndex = 0; ledIndex < STRIP_MAX; ledIndex++)
+  for (int index = stripLow; index <= stripHigh; index++)
   {
-    if(stripPoints[ledIndex].index != 0)
+    if (ledPoints[index].mode)
     {
-      pixel = stripPoints[ledIndex];
-      if (pixel.v < 100)// разжигаем
-      {
-        stripPoints[ledIndex].v = pixel.v + (1 + (pixel.v > 20 ? 1 : 0) + (pixel.v > 40 ? 1 : 0));
-        strip.setHSV(pixel.index, pixel.h, 255, pixel.v);
-        if (pixel.v >= 61) stripPoints[ledIndex].v = 162;
-      }
-      else // розжиг завершен, пора тушить
+      uint8_t val = ledPoints[index].mode & 0x3F;
+      if ((ledPoints[index].mode & 0xC0) == 0x40)
       {
         // гасим
-        if (pixel.v > 100)
+        val -= (1 + (val > 20 ? 1 : 0) + (val > 40 ? 1 : 0));
+        if (val > 1)
         {
-          stripPoints[ledIndex].v = pixel.v - ((1 + (pixel.v > 120 ? 1 : 0) + (pixel.v > 140 ? 1 : 0)));
-          strip.setHSV(pixel.index, pixel.h, 255, pixel.v - 100);
+          strip.setHSV(index, ledPoints[index].value, 255, val);
+          ledPoints[index].mode = 0x40 | val;
         }
         else
-        { 
-          // выключаем
-          strip.setColor(pixel.index, BLACK);
-          // освобождаем элемент
-          stripPoints[ledIndex].index = 0;
+        {
+          // отправляем в очередь запрета розжига
+          strip.setColor(index, BLACK);
           stripActive --;
+          ledPoints[index].mode = 0xFF;
+          ledPoints[index].value = NUMLEDS_STRIP - NUMLEDS_STAR - 1;
+        }
+      }
+      if ((ledPoints[index].mode & 0xC0) == 0x80)
+      {
+        // разжигаем
+        val += (1 + (val > 20 ? 1 : 0) + (val > 40 ? 1 : 0));
+        strip.setHSV(index, ledPoints[index].value, 255, val);
+        ledPoints[index].mode = 0x80 | val;
+        if (val >= 63) {
+          ledPoints[index].mode = 0x40 | 0x3F;
         }
       }
     }
