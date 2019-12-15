@@ -6,6 +6,7 @@
 #define NUMLEDS_STRIP 156    // кол-во светодиодов на переходной ленте
 #define NUMLEDS 286 // кол-во светодиодов
 #define STRIP_MAX 50 // максимум светодиодов на ленте одновремено
+#define TREE_MAX 80 // максимум светодиодов на дереве
 
 struct pixelData {
   uint8_t mode, value;
@@ -34,10 +35,17 @@ unsigned long main_timer;
 static struct treeState {
   byte  MainLoop;
   bool pause;
+  int currentma;
+  byte treeMode;
 } treeState; // управляемое состояние елки
 
 void setup() {
+  strip.setVoltage(5000); // светим на 5 вольтах
+  
   StateInit();
+
+  strip.setVoltage(5000); // светим на 5 вольтах
+  strip.setMaxCurrent(treeState.currentma); // ограничение тока == ограничение светимости
     
   uart.begin(9600);
   uart.println("start-nyt");

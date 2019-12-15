@@ -8,7 +8,28 @@ static int treeHigh = NUMLEDS_TREE - 1; // верхняя граница в об
 static byte tops[4] = {0,33,66,99}; // индексы вершин
 // центры - 16, 49, 82
 
+static byte treeActive = 0; // сколько элементов уже светится
+static byte treeTimeout = 0; // сколько осталось до начала зажигания следующего элемента
+
+
 void treeInit()
+{
+}
+
+void treeTick()
+{
+  switch(treeMode)
+  {
+    case 0:
+      treeModeZero();
+      break;
+    case 1:
+      treeModeBlink();
+      break;
+  }
+}
+
+void treeModeZero()
 {
   //зажжем вершины
   for(byte i=4;i>0;)strip.setColor(tops[--i], RED);
@@ -24,20 +45,102 @@ void treeInit()
     {
       strip.setColor(j, GREEN);
     }
-
-    
     for(byte j = 1; j <= 14; j++)
     {
       strip.setHSV(tops[i] + j, 50 + j * 5, 255, 255);
       strip.setHSV(tops[i+1] - j, 50 + j * 5, 255, 255);
     }
-    
   }
 }
 
-void treeTick()
+void treeModeBlink()
 {
-  if (treeMode == 0)
+    treeAddNewLamp();
+    treeChageValue();
+}
+
+void treeAddNewLamp()
+{
+  if (treeActive < TREE_MAX)
   {
+    // зажгем один элемент
+    if (treeTimeout > 0)
+    {
+      treeTimeout--;
+    }
+    else
+    {
+      int newIndex = getNewTreePosition();
+      ledPoints[newIndex].value = random(0, 255);
+      ledPoints[newIndex].mode = 0x81;
+
+      treeActive ++;
+      treeTimeout = 1;
+    }
   }
 }
+
+int getNewTreePosition() // определим совободную позицию на ленте
+{
+  int newPosition = 0;
+  while (true)
+  {
+    byte shift = random(NUMLEDS_TREE); // берем рандомайзер
+    newPosition = treeLow + shift;
+    bool checked = ledPoints[newPosition].mode == 0;
+    
+    if (checked)
+    {
+      // сделаем другие элементы достпными для выбора (т.к. при гашении они блокируются для выбора)
+      for (byte j = 0; j < NUMLEDS_TREE; j++)
+      {
+        // Ограничение частоты выбора случайного элемента, устанавливается после гашения в макс(128, 255 - число активных элементов)
+        if (ledPoints[treeLow + j].mode == 0xFF) {
+          ledPoints[treeLow + j].value--;
+          if (ledPoints[treeLow + j].value == 0) ledPoints[treeLow + j].mode = 0;
+        }
+      }
+      break;
+    }
+  }
+  return newPosition;
+}
+
+void treeChageValue()
+{
+  // раззожем и потушим
+  for (int index = treeLow; index <= treeHigh; index++)
+  {
+    if (ledPoints[index].mode)
+    {
+      uint8_t val = ledPoints[index].mode & 0x3F;
+      if ((ledPoints[index].mode & 0xC0) == 0x40)
+      {
+        // гасим
+        val -= (1 + (val > 20 ? 1 : 0) + (val > 40 ? 1 : 0));
+        if (val > 1)
+        {
+          strip.setHSV(index, ledPoints[index].value, 255, val);
+          ledPoints[index].mode = 0x40 | val;
+        }
+        else
+        {
+          // отправляем в очередь запрета розжига
+          strip.setColor(index, BLACK);
+          treeActive --;
+          ledPoints[index].mode = 0xFF;
+          ledPoints[index].value = NUMLEDS_TREE / 3;
+        }
+      }
+      if ((ledPoints[index].mode & 0xC0) == 0x80)
+      {
+        // разжигаем
+        val += (1 + (val > 20 ? 1 : 0) + (val > 40 ? 1 : 0));
+        strip.setHSV(index, ledPoints[index].value, 255, val);
+        ledPoints[index].mode = 0x80 | val;
+        if (val >= 63) {
+          ledPoints[index].mode = 0x40 | 0x3F;
+        }
+      }
+    }
+  }}

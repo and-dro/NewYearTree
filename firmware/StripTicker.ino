@@ -3,8 +3,6 @@ static int stripLow = NUMLEDS_TREE; // нижняяя граница в обще
 static int stripHigh = NUMLEDS_TREE + NUMLEDS_STRIP - 1; // верхняя граница в общем массиве
 static byte stripActive = 0; // сколько элементов уже светится
 static byte stripTimeout = 0; // сколько осталось до начала зажигания следующего элемента
-static byte stripLast[NUMLEDS_STRIP]; // счетчик последних зажигавшихся элементов (чтобы заставить светиться все)
-static LEDdata zLedData = LEDdata(0);
 
 void stripTick() // обработчик одного цикла для ленты
 {
