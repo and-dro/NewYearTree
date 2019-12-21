@@ -6,10 +6,22 @@ static byte stripTimeout = 0; // сколько осталось до начал
 
 void stripTick() // обработчик одного цикла для ленты
 {
-  if (stripMode == 0)
+  if (treeState.tuningMode)
+  {
+    stripModeZero();
+  }
+  else if (stripMode == 0)
   {
     stripAddNewLamp();
-    stripChageValue();
+    stripChangeValue();
+  }
+}
+
+void stripModeZero()
+{
+  for (byte i = 0; i < NUMLEDS_STRIP; i++)
+  {
+    strip.setHSV(stripLow + i, i * 10, 255, 127);
   }
 }
 
@@ -66,12 +78,16 @@ int getNewPosition() // определим совободную позицию �
   return newPosition;
 }
 
-void stripChageValue() // изменим яркость активных элементов
+void stripChangeValue() // изменим яркость активных элементов
 {
   // раззожем и потушим
   for (int index = stripLow; index <= stripHigh; index++)
   {
-    if (ledPoints[index].mode)
+    if (ledPoints[index].mode == 0 || ledPoints[index].mode == 0xFF)
+    {
+      strip.setColor(index, BLACK);
+    }
+    else
     {
       uint8_t val = ledPoints[index].mode & 0x3F;
       if ((ledPoints[index].mode & 0xC0) == 0x40)
@@ -86,7 +102,6 @@ void stripChageValue() // изменим яркость активных эле�
         else
         {
           // отправляем в очередь запрета розжига
-          strip.setColor(index, BLACK);
           stripActive --;
           ledPoints[index].mode = 0xFF;
           ledPoints[index].value = NUMLEDS_STAR / 3;

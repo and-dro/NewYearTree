@@ -1,6 +1,7 @@
 
 // пример работы с лентой
 #define LED_PIN 13       // пин ленты
+#define BUZZER_PIN 12       // пин ленты
 #define NUMLEDS_TREE 100     // кол-во светодиодов на елке
 #define NUMLEDS_STAR 30      // кол-во светодиодов на звезде
 #define NUMLEDS_STRIP 156    // кол-во светодиодов на переходной ленте
@@ -33,6 +34,8 @@ microLED strip(leds, NUMLEDS, LED_PIN);  // объект лента
 unsigned long main_timer;
 
 static struct treeState {
+  bool tuningMode;
+  byte buzzerDouble;
   byte  MainLoop;
   bool pause;
   int currentma;
@@ -40,15 +43,20 @@ static struct treeState {
 } treeState; // управляемое состояние елки
 
 void setup() {
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, HIGH);
+
+  buzzerOn(25);
+  
   strip.setVoltage(5000); // светим на 5 вольтах
   
   StateInit();
 
   strip.setVoltage(5000); // светим на 5 вольтах
   strip.setMaxCurrent(treeState.currentma); // ограничение тока == ограничение светимости
-    
+  
   uart.begin(9600);
-  uart.println("start-nyt");
+  uart.println("start-nyt2");
 
   strip.setBrightness(200);    // яркость (0-255)
   // яркость применяется при выводе .show() !
