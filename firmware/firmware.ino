@@ -8,6 +8,7 @@
 #define NUMLEDS 286 // кол-во светодиодов
 #define STRIP_MAX 50 // максимум светодиодов на ленте одновремено
 #define TREE_MAX 80 // максимум светодиодов на дереве
+#define TREE_LINES 6 // количество вертикальных полосок на елке
 
 struct pixelData {
   uint8_t mode, value;
