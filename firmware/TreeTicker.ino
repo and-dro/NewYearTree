@@ -1,4 +1,4 @@
-static byte treeMode = 2; // режим свечения
+static byte treeMode = 3; // режим свечения
 
 static int treeLow = 0; // нижняяя граница в общем массиве
 static int treeHigh = NUMLEDS_TREE - 1; // верхняя граница в общем массиве
@@ -9,6 +9,7 @@ static byte tops[TREE_LINES - 2] = {0, 33, 66, 99}; // индексы верши
 // центры - 16, 49, 82
 struct treeLine {
   uint8_t top, bottom, hue, vue, shift, maxshift;
+  uint16_t colorId;
 }; // тип - параметры одного элемента
 static treeLine treeLines[TREE_LINES]; // массив параметров светящихся элементов
 
@@ -38,6 +39,11 @@ void treeInit()
     treeLines[line].shift = random(0, treeLines[line].maxshift);
     treeLines[line].hue = random(255);
   }
+  for (uint8_t line = 0; line < TREE_LINES; line++)
+  {
+    treeLines[line].colorId = random(0, 0);
+  }
+    
 }
 
 void treeTick()
@@ -53,6 +59,9 @@ void treeTick()
         break;
       case 2:
         treeModeWaterFall();
+        break;
+      case 3:
+        treeModeWaterColorWaves();
         break;
     }
 }
@@ -177,8 +186,6 @@ void treeChangeValue()
   }
 }
 
-static uint8_t waterfallColor = 0; // режим свечения
-static uint8_t waterfallShift = 0; // режим свечения
 static uint8_t waterfallSpeed = 1; // скрость свечения
 void treeModeWaterFall()
 {
@@ -217,5 +224,21 @@ void treeModeWaterFall()
   if (waterfallSpeed == 0)
   {
     waterfallSpeed = TREE_LINES;
+  }
+}
+
+void treeModeWaterColorWaves()
+{
+  for (uint8_t line = 0; line < TREE_LINES; line++)
+  {
+    bool dir = treeLines[line].top < treeLines[line].bottom; // направление индекса
+    uint8_t len = dir ? treeLines[line].bottom - treeLines[line].top : treeLines[line].top - treeLines[line].bottom; // длина ветки
+    treeLines[line].colorId += 5;
+    treeLines[line].colorId = treeLines[line].colorId % 255;
+    for (uint8_t i =  0; i <= len; i++) // по каждому из элементов ветки
+    {
+        strip.setHSV(treeLines[line].top + ( dir ? i : -i), (treeLines[line].colorId + i * 15) % 255, 200, 35);
+    }
+    
   }
 }
