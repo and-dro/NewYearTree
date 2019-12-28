@@ -2,22 +2,19 @@ void StateInit()
 {
   treeState.MainLoop = 5;
   treeState.currentma = 1251;
-  treeState.buzzerEnable = false;
+  treeState.buzzerDouble = 1;
 }
 
 unsigned long buzzer_timer;
 
 void buzzerOn(byte duration)
 {
-  if(treeState.buzzerEnable)
-  {
-    digitalWrite(BUZZER_PIN, LOW);
-    buzzer_timer = millis() + duration;
-  }
+  digitalWrite(BUZZER_PIN, LOW);
+  buzzer_timer = millis() + duration;
 }
 
 
-void buzzerTick()
+void uartTick()
 {
   if (buzzer_timer && buzzer_timer < millis())
   {
@@ -32,9 +29,6 @@ void buzzerTick()
       buzzerOn(100);
     }
   }
-}
-void uartTick()
-{
   if (uart.available())
   {
     char c = uart.read();
@@ -68,25 +62,15 @@ void uartTick()
         StateUpdate(0x33);
         break;
     }
+
   }
 }
 
 void StateUpdate(uint8_t cmd)
 {
-  if(cmd != 0x11) buzzerOn(15);
+  buzzerOn(15);
   switch (cmd)
   {
-    case 0x11: // выкл звук
-      treeState.buzzerEnable = false;
-      break;
-    case 0x12: // вкл/выкл затухание
-      if(treeState.fadeMode != 0) treeState.fadeMode = 0;
-      else treeState.fadeMode = 2;
-      break;
-    case 0x13: // вкл звук
-      treeState.buzzerEnable = true;
-      buzzerOn(500);
-      break;
     case 0x22: // двигаем быстрее
       if (treeState.MainLoop <= 5) treeState.MainLoop = 1;
       else if (treeState.MainLoop <= 30) treeState.MainLoop = 5;

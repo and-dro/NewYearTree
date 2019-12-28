@@ -36,13 +36,11 @@ unsigned long main_timer;
 
 static struct treeState {
   bool tuningMode;
-  bool buzzerEnable;
   byte buzzerDouble;
   byte  MainLoop;
   bool pause;
   int currentma;
   byte treeMode;
-  byte  fadeMode;
 } treeState; // управляемое состояние елки
 
 void setup() {
@@ -50,16 +48,16 @@ void setup() {
   digitalWrite(BUZZER_PIN, HIGH);
 
   buzzerOn(25);
-
+  
   strip.setVoltage(5000); // светим на 5 вольтах
-
+  
   StateInit();
 
   strip.setVoltage(5000); // светим на 5 вольтах
   strip.setMaxCurrent(treeState.currentma); // ограничение тока == ограничение светимости
-
+  
   uart.begin(9600);
-  uart.println("start-nyt");
+  uart.println("start-nyt2");
 
   strip.setBrightness(200);    // яркость (0-255)
   // яркость применяется при выводе .show() !
@@ -74,13 +72,12 @@ void setup() {
   randomSeed(millis());
 }
 
-void receiveEvent(int howMany)
+void receiveEvent(int howMany) 
 {
-  // получим управляющий сигнал от внешнего IR источника (сделан на отдельном чипе, т.к. здесь прерывания отключаются для работы с лентой)
   while (Wire.available()) // пройтись по всем до последнего
-  {
+  { 
     byte cmd = Wire.read();    // принять байт как символ
-    // uart.println(cmd, HEX); // напечатать символ
+    // uart.println(cmd, HEX);         // напечатать символ
     StateUpdate(cmd);
   }
 }
@@ -89,26 +86,8 @@ void receiveEvent(int howMany)
 void loop() {
 
   uartTick();
-  buzzerTick();
-
-  if (treeState.fadeMode != 0)
-  {
-    if (treeState.fadeMode == 2)
-    {
-      bool faded = true;
-      for (uint16_t i = 0; i < NUMLEDS; i++)
-      {
-        if (strip.getColorHEX(i) != 0x0000)
-        {
-          strip.fade(i, 1);
-          faded = false;
-        }
-      }
-      if (faded) treeState.fadeMode = 1;
-      strip.show();
-    }
-  }
-  else if ((millis() - main_timer > treeState.MainLoop) && !treeState.pause) {
+  
+  if ((millis() - main_timer > treeState.MainLoop) && !treeState.pause) {
     starTick(); // звезда
 
     stripTick(); // лента вокруг ствола под звездой
