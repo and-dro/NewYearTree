@@ -35,6 +35,7 @@ microLED strip(leds, NUMLEDS, LED_PIN);  // объект лента
 unsigned long main_timer;
 
 static struct treeState {
+  bool start;
   bool tuningMode;
   bool buzzerEnable;
   byte buzzerDouble;
@@ -48,8 +49,6 @@ static struct treeState {
 void setup() {
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, HIGH);
-
-  buzzerOn(25);
 
   strip.setVoltage(5000); // светим на 5 вольтах
 
@@ -105,6 +104,27 @@ void loop() {
         }
       }
       if (faded) treeState.fadeMode = 1;
+      strip.show();
+    }
+    if (treeState.fadeMode >= 4)
+    {
+      for (uint16_t i = 0; i < NUMLEDS_TREE; i++)
+      {
+        strip.setHSV(i, treeState.fadeMode * 5 + i * 2, 200, treeState.fadeMode);
+      }
+      for (uint16_t i = 0; i < NUMLEDS_STAR; i++)
+      {
+        strip.setHSV(NUMLEDS_TREE + NUMLEDS_STRIP + i, treeState.fadeMode * 2, 150, treeState.fadeMode);
+      }
+      treeState.fadeMode++;
+      if (treeState.fadeMode == 28) {
+        treeState.fadeMode = 0;
+        if (treeState.start)
+        {
+          treeState.start = false;
+          treeState.buzzerEnable = false;
+        }
+      }
       strip.show();
     }
   }

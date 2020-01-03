@@ -1,4 +1,5 @@
 static byte treeMode = 3; // режим свечения
+static int modeLifeTime;
 
 static int treeLow = 0; // нижняяя граница в общем массиве
 static int treeHigh = NUMLEDS_TREE - 1; // верхняя граница в общем массиве
@@ -52,7 +53,20 @@ void treeTick()
   {
     treeModeZero();
   }
-  else switch (treeMode)
+  else 
+  {
+    if(treeState.treeMode)
+    {
+      treeMode = treeState.treeMode;
+      treeState.treeMode = 0;
+      modeLifeTime = random(600,1200);
+    }
+    if(modeLifeTime == 0){
+      treeMode = random(1,3);
+      modeLifeTime = random(600,1200);
+    }
+    modeLifeTime--;
+    switch (treeMode)
     {
       case 1:
         treeModeBlink();
@@ -64,6 +78,7 @@ void treeTick()
         treeModeWaterColorWaves();
         break;
     }
+   }
 }
 
 void treeModeZero()

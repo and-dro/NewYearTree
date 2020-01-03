@@ -2,7 +2,12 @@ void StateInit()
 {
   treeState.MainLoop = 5;
   treeState.currentma = 1251;
-  treeState.buzzerEnable = false;
+  treeState.buzzerEnable = true;
+  treeState.buzzerDouble = 1;
+  treeState.fadeMode = 4;
+  treeState.start = true;
+  
+  buzzerOn(25);
 }
 
 unsigned long buzzer_timer;
@@ -80,7 +85,7 @@ void StateUpdate(uint8_t cmd)
       treeState.buzzerEnable = false;
       break;
     case 0x12: // вкл/выкл затухание
-      if(treeState.fadeMode != 0) treeState.fadeMode = 0;
+      if(treeState.fadeMode != 0) treeState.fadeMode = 4;
       else treeState.fadeMode = 2;
       break;
     case 0x13: // вкл звук
@@ -126,6 +131,24 @@ void StateUpdate(uint8_t cmd)
     case 0x33: // режим настройки
       treeState.tuningMode = !treeState.tuningMode;
       treeState.pause = false;
+      break;
+
+    case 0x51:
+    case 0x61:
+    case 0x71:
+      treeState.treeMode = 1;
+      break;
+
+    case 0x52:
+    case 0x62:
+    case 0x72:
+      treeState.treeMode = 2;
+      break;
+
+    case 0x53:
+    case 0x63:
+    case 0x73:
+      treeState.treeMode = 3;
       break;
 
     default:
